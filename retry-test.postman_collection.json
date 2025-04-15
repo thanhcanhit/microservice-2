@@ -1,0 +1,76 @@
+{
+	"info": {
+		"_postman_id": "c6d7e8f9-a0b1-2c3d-4e5f-6g7h8i9j0k1l",
+		"name": "Retry Pattern Test Flow",
+		"description": "Collection tập trung vào việc kiểm thử Retry Pattern",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "1. Kiểm tra endpoint flaky trực tiếp",
+			"request": {
+				"method": "GET",
+				"url": {
+					"raw": "http://localhost:3001/api/inventory/test/flaky",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "3001",
+					"path": [
+						"api",
+						"inventory",
+						"test",
+						"flaky"
+					]
+				},
+				"description": "Kiểm tra endpoint flaky trực tiếp (ngẫu nhiên thành công hoặc thất bại)"
+			},
+			"response": []
+		},
+		{
+			"name": "2. Kiểm tra Retry Pattern",
+			"request": {
+				"method": "GET",
+				"url": {
+					"raw": "http://localhost:3000/api/orders/test/retry",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "3000",
+					"path": [
+						"api",
+						"orders",
+						"test",
+						"retry"
+					]
+				},
+				"description": "Kiểm tra Retry Pattern khi gọi đến endpoint flaky"
+			},
+			"response": []
+		},
+		{
+			"name": "3. Kiểm tra Retry với Circuit Breaker",
+			"request": {
+				"method": "GET",
+				"url": {
+					"raw": "http://localhost:3000/api/orders/test/retry-with-circuit-breaker",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "3000",
+					"path": [
+						"api",
+						"orders",
+						"test",
+						"retry-with-circuit-breaker"
+					]
+				},
+				"description": "Kiểm tra kết hợp Retry Pattern và Circuit Breaker"
+			},
+			"response": []
+		}
+	]
+}

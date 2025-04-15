@@ -106,19 +106,29 @@ router.post('/:productId/reserve', async (req, res) => {
   }
 });
 
-// Add a new endpoint that will sometimes fail (for testing circuit breaker)
+// Add a new endpoint that will sometimes fail (for testing circuit breaker and retry)
 router.get('/test/flaky', (req, res) => {
-  console.log('Flaky endpoint called - deciding whether to fail...');
+  // Get request ID from headers or generate a new one
+  const requestId = req.headers['x-request-id'] || Math.floor(Math.random() * 1000000);
+  console.log(`[Request ID: ${requestId}] Flaky endpoint called - deciding whether to fail...`);
 
   // Randomly fail about 70% of the time to make testing easier
   if (Math.random() < 0.7) {
-    console.log('Flaky endpoint FAILING with 500 error');
-    return res.status(500).json({ error: 'Random server error for testing' });
+    console.log(`[Request ID: ${requestId}] Flaky endpoint FAILING with 500 error`);
+    return res.status(500).json({
+      error: 'Random server error for testing',
+      requestId: requestId,
+      timestamp: new Date().toISOString()
+    });
   }
 
   // Otherwise succeed
-  console.log('Flaky endpoint SUCCEEDING with 200 response');
-  res.json({ message: 'Service is working correctly' });
+  console.log(`[Request ID: ${requestId}] Flaky endpoint SUCCEEDING with 200 response`);
+  res.json({
+    message: 'Service is working correctly',
+    requestId: requestId,
+    timestamp: new Date().toISOString()
+  });
 });
 
 module.exports = router;
