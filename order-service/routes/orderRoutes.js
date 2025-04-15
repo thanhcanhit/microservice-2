@@ -3,7 +3,70 @@ const router = express.Router();
 const axios = require("axios");
 const { default: axiosRetry, isNetworkOrIdempotentRequestError } = require("axios-retry");
 const CircuitBreaker = require("opossum");
+const Bottleneck = require("bottleneck");
+// Use a custom timeout function instead of p-timeout (which is ESM only)
 const db = require("../db");
+
+// Configure Time Limiter - Custom implementation
+const timeoutRequest = (promise, timeoutMs = 3000, errorMessage = 'Request timed out') => {
+  return Promise.race([
+    promise,
+    new Promise((_, reject) => {
+      setTimeout(() => {
+        const error = new Error(errorMessage);
+        error.name = 'TimeoutError';
+        reject(error);
+      }, timeoutMs);
+    })
+  ]);
+};
+
+// Create a time-limited version of axios
+const timedAxios = {
+  get: (url, config, timeoutMs) => {
+    return timeoutRequest(
+      axios.get(url, config),
+      timeoutMs,
+      `GET request to ${url} timed out after ${timeoutMs}ms`
+    );
+  },
+  post: (url, data, config, timeoutMs) => {
+    return timeoutRequest(
+      axios.post(url, data, config),
+      timeoutMs,
+      `POST request to ${url} timed out after ${timeoutMs}ms`
+    );
+  }
+};
+
+// Configure Rate Limiter
+const limiter = new Bottleneck({
+  maxConcurrent: 2, // Maximum number of requests running at the same time
+  minTime: 2000, // Minimum time (in ms) between each request (max 5 requests per 10 seconds)
+  highWater: 10, // Maximum number of requests in queue
+  strategy: Bottleneck.strategy.LEAK, // When queue is full, drop the oldest request
+});
+
+// Create a rate-limited version of axios
+const limitedAxios = {
+  get: (url, config) => limiter.schedule(() => axios.get(url, config)),
+  post: (url, data, config) => limiter.schedule(() => axios.post(url, data, config)),
+  put: (url, data, config) => limiter.schedule(() => axios.put(url, data, config)),
+  delete: (url, config) => limiter.schedule(() => axios.delete(url, config)),
+};
+
+// Add event listeners for rate limiter
+limiter.on("dropped", (dropped) => {
+  console.log(`Rate Limiter: Request dropped due to queue overflow`, dropped);
+});
+
+limiter.on("depleted", (empty) => {
+  console.log(`Rate Limiter: Queue depleted, ${empty.running} running, ${empty.queued} queued`);
+});
+
+limiter.on("debug", (message, data) => {
+  console.debug(`Rate Limiter Debug: ${message}`, data);
+});
 
 // Configure axios-retry
 axiosRetry(axios, {
@@ -301,6 +364,174 @@ router.get("/test/retry-with-circuit-breaker", async (req, res) => {
 			error: error.message,
 		});
 	}
+});
+
+// Test endpoint to demonstrate rate limiter
+router.get("/test/rate-limiter", async (req, res) => {
+  try {
+    // Get number of requests from query parameter or default to 10
+    const numRequests = parseInt(req.query.requests) || 10;
+    const startTime = Date.now();
+
+    console.log(`Starting ${numRequests} rate-limited requests...`);
+
+    // Make multiple requests to the flaky endpoint using rate limiter
+    const promises = [];
+    for (let i = 0; i < numRequests; i++) {
+      const requestId = Math.floor(Math.random() * 1000000);
+      console.log(`[Request ID: ${requestId}] Scheduling request ${i + 1}/${numRequests}`);
+
+      const promise = limiter.schedule(async () => {
+        console.log(`[Request ID: ${requestId}] Executing request ${i + 1}/${numRequests}`);
+        try {
+          const response = await axios.get(`${INVENTORY_SERVICE_URL}/test/flaky`, {
+            headers: {
+              "X-Request-ID": requestId,
+            },
+          });
+          return {
+            requestId,
+            requestNumber: i + 1,
+            status: "success",
+            data: response.data
+          };
+        } catch (error) {
+          return {
+            requestId,
+            requestNumber: i + 1,
+            status: "error",
+            message: error.message
+          };
+        }
+      });
+
+      promises.push(promise);
+    }
+
+    // Wait for all requests to complete
+    const responseResults = await Promise.all(promises);
+    const endTime = Date.now();
+    const totalTime = endTime - startTime;
+
+    res.json({
+      message: `Completed ${numRequests} rate-limited requests in ${totalTime}ms`,
+      requestsPerSecond: (numRequests / (totalTime / 1000)).toFixed(2),
+      limiterStats: {
+        running: limiter.counts().RUNNING,
+        queued: limiter.counts().QUEUED,
+        done: limiter.counts().DONE,
+      },
+      results: responseResults
+    });
+  } catch (error) {
+    console.error("Error in rate limiter test:", error);
+    res.status(500).json({
+      message: "Error in rate limiter test",
+      error: error.message
+    });
+  }
+});
+
+// Test endpoint to demonstrate time limiter
+router.get("/test/time-limiter", async (req, res) => {
+  try {
+    // Get timeout from query parameter or default to 2000ms
+    const timeout = parseInt(req.query.timeout) || 2000;
+    // Get delay from query parameter or default to 5000ms
+    const delay = parseInt(req.query.delay) || 5000;
+    const requestId = Math.floor(Math.random() * 1000000);
+
+    console.log(`[Request ID: ${requestId}] Making request with ${timeout}ms timeout to endpoint with ${delay}ms delay...`);
+
+    try {
+      // Make request with timeout to the delay endpoint
+      const response = await timeoutRequest(
+        axios.get(`${INVENTORY_SERVICE_URL}/test/delay?delay=${delay}`, {
+          headers: {
+            "X-Request-ID": requestId,
+          },
+        }),
+        timeout,
+        `Request timed out after ${timeout}ms`
+      );
+
+      res.json({
+        message: "Request completed successfully within timeout",
+        timeout: timeout,
+        delay: delay,
+        requestId: requestId,
+        data: response.data
+      });
+    } catch (error) {
+      if (error.name === 'TimeoutError') {
+        console.log(`[Request ID: ${requestId}] Request timed out after ${timeout}ms`);
+        res.status(408).json({
+          message: "Request timed out",
+          timeout: timeout,
+          delay: delay,
+          requestId: requestId,
+          error: error.message
+        });
+      } else {
+        throw error;
+      }
+    }
+  } catch (error) {
+    console.error("Error in time limiter test:", error);
+    res.status(500).json({
+      message: "Error in time limiter test",
+      error: error.message
+    });
+  }
+});
+
+// Test endpoint to demonstrate all resilience patterns together
+router.get("/test/resilience", async (req, res) => {
+  try {
+    const requestId = Math.floor(Math.random() * 1000000);
+    console.log(`[Request ID: ${requestId}] Testing all resilience patterns together...`);
+
+    // Create a circuit breaker that uses rate-limited and time-limited axios
+    const resilientCircuit = new CircuitBreaker(async () => {
+      // Use rate limiter
+      return limiter.schedule(async () => {
+        // Use time limiter
+        return timeoutRequest(
+          // Use retry
+          axios.get(`${INVENTORY_SERVICE_URL}/test/flaky`, {
+            headers: {
+              "X-Request-ID": requestId,
+            },
+          }),
+          3000,
+          `Request timed out after 3000ms`
+        );
+      });
+    }, circuitBreakerOptions);
+
+    try {
+      const result = await resilientCircuit.fire();
+      res.json({
+        message: "Request successful with all resilience patterns",
+        requestId: requestId,
+        circuitStatus: resilientCircuit.status,
+        data: result.data
+      });
+    } catch (error) {
+      res.status(500).json({
+        message: "Request failed despite all resilience patterns",
+        requestId: requestId,
+        circuitStatus: resilientCircuit.status,
+        error: error.message
+      });
+    }
+  } catch (error) {
+    console.error("Error in resilience test:", error);
+    res.status(500).json({
+      message: "Error in resilience test",
+      error: error.message
+    });
+  }
 });
 
 module.exports = router;

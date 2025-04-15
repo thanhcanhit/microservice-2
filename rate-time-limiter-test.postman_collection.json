@@ -1,0 +1,223 @@
+{
+	"info": {
+		"_postman_id": "d7e8f9a0-b1c2-3d4e-5f6g-7h8i9j0k1l2",
+		"name": "Rate Limiter & Time Limiter Test Flow",
+		"description": "Collection tập trung vào việc kiểm thử Rate Limiter và Time Limiter Pattern",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "Rate Limiter Tests",
+			"item": [
+				{
+					"name": "1. Test Rate Limiter (10 requests)",
+					"request": {
+						"method": "GET",
+						"url": {
+							"raw": "http://localhost:3000/api/orders/test/rate-limiter?requests=10",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "3000",
+							"path": [
+								"api",
+								"orders",
+								"test",
+								"rate-limiter"
+							],
+							"query": [
+								{
+									"key": "requests",
+									"value": "10"
+								}
+							]
+						},
+						"description": "Kiểm tra Rate Limiter với 10 requests"
+					},
+					"response": []
+				},
+				{
+					"name": "2. Test Rate Limiter (20 requests)",
+					"request": {
+						"method": "GET",
+						"url": {
+							"raw": "http://localhost:3000/api/orders/test/rate-limiter?requests=20",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "3000",
+							"path": [
+								"api",
+								"orders",
+								"test",
+								"rate-limiter"
+							],
+							"query": [
+								{
+									"key": "requests",
+									"value": "20"
+								}
+							]
+						},
+						"description": "Kiểm tra Rate Limiter với 20 requests"
+					},
+					"response": []
+				},
+				{
+					"name": "3. Test Rate Limiter (30 requests)",
+					"request": {
+						"method": "GET",
+						"url": {
+							"raw": "http://localhost:3000/api/orders/test/rate-limiter?requests=30",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "3000",
+							"path": [
+								"api",
+								"orders",
+								"test",
+								"rate-limiter"
+							],
+							"query": [
+								{
+									"key": "requests",
+									"value": "30"
+								}
+							]
+						},
+						"description": "Kiểm tra Rate Limiter với 30 requests"
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Time Limiter Tests",
+			"item": [
+				{
+					"name": "1. Test Delay Endpoint (3s)",
+					"request": {
+						"method": "GET",
+						"url": {
+							"raw": "http://localhost:3001/api/inventory/test/delay?delay=3000",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "3001",
+							"path": [
+								"api",
+								"inventory",
+								"test",
+								"delay"
+							],
+							"query": [
+								{
+									"key": "delay",
+									"value": "3000"
+								}
+							]
+						},
+						"description": "Kiểm tra endpoint có độ trễ 3 giây"
+					},
+					"response": []
+				},
+				{
+					"name": "2. Test Time Limiter (Success: timeout=5s, delay=3s)",
+					"request": {
+						"method": "GET",
+						"url": {
+							"raw": "http://localhost:3000/api/orders/test/time-limiter?timeout=5000&delay=3000",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "3000",
+							"path": [
+								"api",
+								"orders",
+								"test",
+								"time-limiter"
+							],
+							"query": [
+								{
+									"key": "timeout",
+									"value": "5000"
+								},
+								{
+									"key": "delay",
+									"value": "3000"
+								}
+							]
+						},
+						"description": "Kiểm tra Time Limiter với timeout lớn hơn delay (thành công)"
+					},
+					"response": []
+				},
+				{
+					"name": "3. Test Time Limiter (Timeout: timeout=2s, delay=5s)",
+					"request": {
+						"method": "GET",
+						"url": {
+							"raw": "http://localhost:3000/api/orders/test/time-limiter?timeout=2000&delay=5000",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "3000",
+							"path": [
+								"api",
+								"orders",
+								"test",
+								"time-limiter"
+							],
+							"query": [
+								{
+									"key": "timeout",
+									"value": "2000"
+								},
+								{
+									"key": "delay",
+									"value": "5000"
+								}
+							]
+						},
+						"description": "Kiểm tra Time Limiter với timeout nhỏ hơn delay (timeout)"
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Combined Resilience Tests",
+			"item": [
+				{
+					"name": "1. Test All Resilience Patterns Together",
+					"request": {
+						"method": "GET",
+						"url": {
+							"raw": "http://localhost:3000/api/orders/test/resilience",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "3000",
+							"path": [
+								"api",
+								"orders",
+								"test",
+								"resilience"
+							]
+						},
+						"description": "Kiểm tra tất cả các mẫu thiết kế khả năng phục hồi cùng nhau"
+					},
+					"response": []
+				}
+			]
+		}
+	]
+}

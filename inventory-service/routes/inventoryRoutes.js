@@ -131,4 +131,24 @@ router.get('/test/flaky', (req, res) => {
   });
 });
 
+// Add a new endpoint with configurable delay for testing time limiter
+router.get('/test/delay', (req, res) => {
+  // Get delay from query parameter or default to 5000ms (5 seconds)
+  const delay = parseInt(req.query.delay) || 5000;
+  const requestId = req.headers['x-request-id'] || Math.floor(Math.random() * 1000000);
+
+  console.log(`[Request ID: ${requestId}] Delay endpoint called with ${delay}ms delay...`);
+
+  // Simulate a delay
+  setTimeout(() => {
+    console.log(`[Request ID: ${requestId}] Delay endpoint responding after ${delay}ms`);
+    res.json({
+      message: `Response after ${delay}ms delay`,
+      requestId: requestId,
+      delay: delay,
+      timestamp: new Date().toISOString()
+    });
+  }, delay);
+});
+
 module.exports = router;
