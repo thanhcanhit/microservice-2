@@ -18,9 +18,22 @@ File `rate-time-limiter-test.postman_collection.json` chứa các request đư�
 
 Rate Limiter giới hạn số lượng request trong một khoảng thời gian nhất định, bảo vệ service khỏi quá tải.
 
-### Bước 1: Kiểm tra Rate Limiter với 10 requests
+### Bước 1: Kiểm tra Simple Rate Limiter với 10 requests
 
-1. Chạy request "1. Test Rate Limiter (10 requests)"
+1. Chạy request "1. Test Simple Rate Limiter (10 requests)"
+2. Quan sát kết quả:
+   - Tất cả 10 requests sẽ được xử lý, nhưng với tốc độ bị giới hạn (5 requests/10 giây)
+   - Thời gian hoàn thành sẽ khoảng 20 giây
+   - Response sẽ hiển thị rõ ràng thời gian xử lý của từng request và thời điểm xử lý
+   - Bạn sẽ thấy các request được xử lý cách nhau khoảng 2 giây
+3. Quan sát log trong console của Order Service:
+   - Bạn sẽ thấy log với timestamp của từng request
+   - Các timestamp sẽ cách nhau khoảng 2 giây
+4. Mục đích: Thấy rõ cách Rate Limiter giới hạn tốc độ gửi request
+
+### Bước 2: Kiểm tra Rate Limiter với 10 requests
+
+1. Chạy request "2. Test Rate Limiter (10 requests)"
 2. Quan sát kết quả:
    - Tất cả 10 requests sẽ được xử lý, nhưng với tốc độ bị giới hạn (5 requests/10 giây)
    - Thời gian hoàn thành sẽ khoảng 20 giây
@@ -43,7 +56,8 @@ Rate Limiter giới hạn số lượng request trong một khoảng thời gian
 
 1. Chạy request "3. Test Rate Limiter (30 requests)"
 2. Quan sát kết quả:
-   - Một số request có thể bị drop do vượt quá giới hạn hàng đợi (highWater = 10)
+   - Một số request có thể bị từ chối do vượt quá giới hạn hàng đợi (highWater = 10)
+   - Bạn sẽ thấy lỗi "Task was rejected" khi hàng đợi đầy
    - Bạn sẽ thấy log về việc request bị drop trong console của Order Service
 3. Mục đích: Thấy cách Rate Limiter xử lý khi số lượng request vượt quá giới hạn hàng đợi
 
@@ -97,7 +111,7 @@ Time Limiter đặt thời gian chờ cho các request, ngăn chặn các reques
    - Giới hạn số lượng request đồng thời (maxConcurrent = 2)
    - Giới hạn tốc độ gửi request (minTime = 2000ms, tương đương 5 requests/10 giây)
    - Giới hạn số lượng request trong hàng đợi (highWater = 10)
-   - Khi hàng đợi đầy, request cũ nhất sẽ bị drop (strategy = LEAK)
+   - Chiến lược BLOCK: Khi hàng đợi đầy, từ chối request mới
 
 2. **Time Limiter**:
    - Đặt thời gian chờ cho các request

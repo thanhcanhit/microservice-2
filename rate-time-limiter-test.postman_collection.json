@@ -10,7 +10,35 @@
 			"name": "Rate Limiter Tests",
 			"item": [
 				{
-					"name": "1. Test Rate Limiter (10 requests)",
+					"name": "1. Test Simple Rate Limiter (10 requests)",
+					"request": {
+						"method": "GET",
+						"url": {
+							"raw": "http://localhost:3000/api/orders/test/simple-rate-limiter?requests=10",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "3000",
+							"path": [
+								"api",
+								"orders",
+								"test",
+								"simple-rate-limiter"
+							],
+							"query": [
+								{
+									"key": "requests",
+									"value": "10"
+								}
+							]
+						},
+						"description": "Kiểm tra Simple Rate Limiter với 10 requests (rõ ràng hơn)"
+					},
+					"response": []
+				},
+				{
+					"name": "2. Test Rate Limiter (10 requests)",
 					"request": {
 						"method": "GET",
 						"url": {

@@ -42,9 +42,9 @@ const timedAxios = {
 // Configure Rate Limiter
 const limiter = new Bottleneck({
   maxConcurrent: 2, // Maximum number of requests running at the same time
-  minTime: 500, // Minimum time (in ms) between each request (max 5 requests per 10 seconds)
+  minTime: 2000, // Minimum time (in ms) between each request (max 5 requests per 10 seconds)
   highWater: 10, // Maximum number of requests in queue
-  strategy: Bottleneck.strategy.LEAK, // When queue is full, drop the oldest request
+  strategy: Bottleneck.strategy.BLOCK, // When queue is full, reject new requests
 });
 
 // Create a rate-limited version of axios
@@ -529,6 +529,63 @@ router.get("/test/resilience", async (req, res) => {
     console.error("Error in resilience test:", error);
     res.status(500).json({
       message: "Error in resilience test",
+      error: error.message
+    });
+  }
+});
+
+// Simple endpoint to demonstrate rate limiter clearly
+router.get("/test/simple-rate-limiter", async (req, res) => {
+  try {
+    // Get number of requests from query parameter or default to 10
+    const numRequests = parseInt(req.query.requests) || 10;
+    const startTime = Date.now();
+
+    console.log(`Starting ${numRequests} simple rate-limited requests...`);
+
+    // Make multiple simple requests using rate limiter
+    const promises = [];
+    for (let i = 0; i < numRequests; i++) {
+      const requestId = Math.floor(Math.random() * 1000000);
+
+      const promise = limiter.schedule(() => {
+        const timestamp = new Date().toISOString();
+        console.log(`[${timestamp}] [Request ID: ${requestId}] Processing request ${i + 1}/${numRequests}`);
+
+        // Simple operation with no external calls
+        return {
+          requestId,
+          requestNumber: i + 1,
+          timestamp,
+          processingTime: Date.now() - startTime
+        };
+      });
+
+      promises.push(promise);
+    }
+
+    // Wait for all requests to complete
+    const results = await Promise.all(promises);
+    const endTime = Date.now();
+    const totalTime = endTime - startTime;
+
+    res.json({
+      message: `Completed ${numRequests} simple rate-limited requests in ${totalTime}ms`,
+      requestsPerSecond: (numRequests / (totalTime / 1000)).toFixed(2),
+      expectedTimeForAllRequests: `${Math.ceil(numRequests / 5) * 10} seconds`,
+      actualTimeInSeconds: (totalTime / 1000).toFixed(2),
+      limiterConfig: {
+        maxConcurrent: 2,
+        minTime: 2000,
+        highWater: 10,
+        strategy: "BLOCK"
+      },
+      results
+    });
+  } catch (error) {
+    console.error("Error in simple rate limiter test:", error);
+    res.status(500).json({
+      message: "Error in simple rate limiter test",
       error: error.message
     });
   }

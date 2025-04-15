@@ -82,7 +82,7 @@ const limiter = new Bottleneck({
   maxConcurrent: 2,              // Số lượng request đồng thời tối đa
   minTime: 2000,                 // Thời gian tối thiểu giữa các request (5 requests/10 giây)
   highWater: 10,                 // Số lượng request tối đa trong hàng đợi
-  strategy: Bottleneck.strategy.LEAK, // Khi hàng đợi đầy, drop request cũ nhất
+  strategy: Bottleneck.strategy.BLOCK, // Khi hàng đợi đầy, từ chối request mới
 });
 ```
 
