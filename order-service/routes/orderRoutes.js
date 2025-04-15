@@ -42,7 +42,7 @@ const timedAxios = {
 // Configure Rate Limiter
 const limiter = new Bottleneck({
   maxConcurrent: 2, // Maximum number of requests running at the same time
-  minTime: 2000, // Minimum time (in ms) between each request (max 5 requests per 10 seconds)
+  minTime: 500, // Minimum time (in ms) between each request (max 5 requests per 10 seconds)
   highWater: 10, // Maximum number of requests in queue
   strategy: Bottleneck.strategy.LEAK, // When queue is full, drop the oldest request
 });
