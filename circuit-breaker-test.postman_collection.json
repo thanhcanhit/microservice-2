@@ -1,0 +1,174 @@
+{
+	"info": {
+		"_postman_id": "b5c7d8e9-f0a1-2b3c-4d5e-6f7g8h9i0j1k",
+		"name": "Circuit Breaker Test Flow (Updated)",
+		"description": "Collection tập trung vào việc kiểm thử Circuit Breaker pattern với thời gian timeout dài hơn và logging chi tiết",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "1. Kiểm tra trạng thái Circuit Breaker ban đầu",
+			"request": {
+				"method": "GET",
+				"url": {
+					"raw": "http://localhost:3000/api/orders/status/circuit-breaker",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "3000",
+					"path": [
+						"api",
+						"orders",
+						"status",
+						"circuit-breaker"
+					]
+				},
+				"description": "Kiểm tra trạng thái ban đầu của Circuit Breaker (nên là 'closed')"
+			},
+			"response": []
+		},
+		{
+			"name": "2. Kiểm tra endpoint flaky trực tiếp",
+			"request": {
+				"method": "GET",
+				"url": {
+					"raw": "http://localhost:3001/api/inventory/test/flaky",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "3001",
+					"path": [
+						"api",
+						"inventory",
+						"test",
+						"flaky"
+					]
+				},
+				"description": "Kiểm tra endpoint flaky trực tiếp (ngẫu nhiên thành công hoặc thất bại)"
+			},
+			"response": []
+		},
+		{
+			"name": "3. Kích hoạt Circuit Breaker (chạy nhiều lần)",
+			"request": {
+				"method": "GET",
+				"url": {
+					"raw": "http://localhost:3000/api/orders/test/circuit-breaker",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "3000",
+					"path": [
+						"api",
+						"orders",
+						"test",
+						"circuit-breaker"
+					]
+				},
+				"description": "Gọi endpoint flaky thông qua Circuit Breaker (chạy nhiều lần để kích hoạt Circuit Breaker)"
+			},
+			"response": []
+		},
+		{
+			"name": "4. Kiểm tra trạng thái Circuit Breaker sau khi kích hoạt",
+			"request": {
+				"method": "GET",
+				"url": {
+					"raw": "http://localhost:3000/api/orders/status/circuit-breaker",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "3000",
+					"path": [
+						"api",
+						"orders",
+						"status",
+						"circuit-breaker"
+					]
+				},
+				"description": "Kiểm tra trạng thái Circuit Breaker sau khi kích hoạt (nên là 'open')"
+			},
+			"response": []
+		},
+		{
+			"name": "5. Tạo đơn hàng khi Circuit Breaker đang mở",
+			"request": {
+				"method": "POST",
+				"url": {
+					"raw": "http://localhost:3000/api/orders",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "3000",
+					"path": [
+						"api",
+						"orders"
+					]
+				},
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"customer_id\": \"CUST-001\",\n    \"product_id\": \"PROD-001\",\n    \"quantity\": 1\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"description": "Tạo đơn hàng khi Circuit Breaker đang mở (nên tạo với trạng thái 'pending')"
+			},
+			"response": []
+		},
+		{
+			"name": "6. Kiểm tra đơn hàng đã tạo",
+			"request": {
+				"method": "GET",
+				"url": {
+					"raw": "http://localhost:3000/api/orders",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "3000",
+					"path": [
+						"api",
+						"orders"
+					]
+				},
+				"description": "Kiểm tra đơn hàng đã tạo khi Circuit Breaker đang mở"
+			},
+			"response": []
+		}
+	],
+	"event": [
+		{
+			"listen": "prerequest",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					""
+				]
+			}
+		},
+		{
+			"listen": "test",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					""
+				]
+			}
+		}
+	],
+	"variable": [
+		{
+			"key": "baseUrl",
+			"value": "http://localhost:3000",
+			"type": "string"
+		}
+	]
+}
